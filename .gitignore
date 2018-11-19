@@ -328,3 +328,29 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+
+external/glm/gtx/
+
+external/glm/gtc/
+
+external/glm/detail/
+
+external/gl3w/GL/
+
+external/gl3w/lib/
+
+external/glm/
+
+external/SDL2-devel-2\.0\.8-VC/SDL2-2\.0\.8/docs/
+
+external/imgui/
+
+external/SDL2-devel-2\.0\.8-VC/SDL2-2\.0\.8/
+
+PathFinder_Visualisation\.vcxproj\.filters
+
+PathFinder_Visualisation\.vcxproj
+
+PathFinder_Visualisation\.sln
+
+imgui\.ini
