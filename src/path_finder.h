@@ -35,7 +35,7 @@ namespace md
 		SDL_Window *m_Window;
 		SDL_Renderer *m_Renderer;
 		SDL_GLContext m_Context;
-		grid::Grid* m_Grid;
+		grid::GridMap* m_Grid;
 
 
 		static glm::ivec2 m_AppDimension;

@@ -9,7 +9,7 @@
 #include "shader_conf.h"
 #include "properties.h"
 
-glm::ivec2 md::PathFinderApp::m_AppDimension = glm::ivec2(800, 600);
+glm::ivec2 md::PathFinderApp::m_AppDimension = glm::ivec2(790, 600);
 
 md::PathFinderApp::PathFinderApp()
 {
@@ -28,9 +28,11 @@ void md::PathFinderApp::Start()
 
 	SDL_GL_SetSwapInterval(1);
 
-	m_Grid = new grid::Grid();
+	m_Grid = new grid::GridMap();
 
 	shader::Start(m_AppDimension);
+
+	m_Grid->Start();
 	m_Grid->OnWindowResize(m_AppDimension);
 
 	isRunning = true;

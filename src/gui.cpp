@@ -30,7 +30,7 @@ namespace md
 	void gui::Imgui::Render()
 	{
 		ImGui::Begin("_DEBUG_");
-		if (ImGui::SliderFloat("Line width", &lineWidth, 0.001f, 200.f))
+		if (ImGui::SliderFloat("Line width", &lineWidth, 1.f, 10.f))
 		{
 			glLineWidth(lineWidth);
 		}
