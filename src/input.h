@@ -266,6 +266,7 @@ namespace input
 	bool IsScrollActive();
 
 	glm::vec2 GetMousePosition();
+	void GetMousePosition(int *x, int *y);
 	glm::vec2 GetGlobalMousePosition();
 	glm::vec2 GetRelativeMousePosition();
 }

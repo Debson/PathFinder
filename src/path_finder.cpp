@@ -8,6 +8,7 @@
 #include "input.h"
 #include "shader_conf.h"
 #include "properties.h"
+#include "interface.h"
 
 glm::ivec2 md::PathFinderApp::m_AppDimension = glm::ivec2(790, 600);
 
@@ -34,7 +35,6 @@ void md::PathFinderApp::Start()
 
 	m_Grid->Start();
 	m_Grid->OnWindowResize(m_AppDimension);
-
 	isRunning = true;
 	
 #ifdef _DEBUG_
@@ -70,6 +70,7 @@ void md::PathFinderApp::SetupSDL()
 {
 	m_Window = SDL_CreateWindow("PathFinder", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_AppDimension.x, m_AppDimension.y, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 	//m_Renderer = SDL_CreateRenderer(m_Window, -1, SDL_RENDERER_ACCELERATED);
+	SDL_CaptureMouse(SDL_FALSE);
 
 }
 
@@ -94,12 +95,8 @@ void md::PathFinderApp::SetupGlew()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glEnable(GL_LINE_SMOOTH);
-	glPointSize(10.f);
-	glLineWidth(0.0001f);
+	glLineWidth(1.f);
 
-	GLfloat lineWidthRange[2] = { 0.0f, 0.0f };
-	glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, lineWidthRange);
-	std::cout << lineWidthRange[0];
 
 #ifdef _DEBUG_
 	IMGUI_CHECKVERSION();
@@ -150,6 +147,11 @@ void md::PathFinderApp::ProcessInput(SDL_Event* e)
 		case(SDL_MOUSEMOTION): {
 			inputconf::UpdateMousePosition(e->motion.x, e->motion.y);
 			inputconf::UpdateRelativeMousePosition();
+			m_Grid->CheckCollision();
+			break;
+		}
+		case(SDL_KEYDOWN):
+		{
 			break;
 		}
 		}
@@ -174,6 +176,9 @@ void md::PathFinderApp::ProcessInput(SDL_Event* e)
 
 	const unsigned int current_mousestate = SDL_GetMouseState(NULL, NULL);
 	inputconf::UpdateMouseState(current_mousestate);
+
+
+	interface::ProcessInput();
 }
 
 void md::PathFinderApp::Update()
@@ -183,16 +188,16 @@ void md::PathFinderApp::Update()
 
 void md::PathFinderApp::Render()
 {
-	glClearColor(1.f, 0.5f, 0.f, 1.f);
+	glClearColor(GRID_COLOR.r, GRID_COLOR.g, GRID_COLOR.b, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-	glm::vec3 size(100.f);
-	glm::vec2 pos(input::GetMousePosition().x - size.x / 2.f, input::GetMousePosition().y - size.y / 2.f);
-	shader::Draw(pos, size, true);
-	
+	// Draw grid
 	shader::DrawGrid();
 	shader::DrawGrid(true);
+	
+	// Draw colored squares
+	m_Grid->Render();
+	//shader::Draw();
 
 
 #ifdef _DEBUG_
@@ -204,7 +209,7 @@ void md::PathFinderApp::Render()
 
 	SDL_GL_SwapWindow(m_Window);
 
-	SDL_Delay(16);
+	//SDL_Delay(16);
 }
 
 

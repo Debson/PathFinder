@@ -55,6 +55,12 @@ namespace md
 		return glm::vec2(mdCurrentMouseX, mdCurrentMouseY);
 	}
 
+	void input::GetMousePosition(int *x, int *y)
+	{
+		*x = mdCurrentMouseX;
+		*y = mdCurrentMouseY;
+	}
+
 	glm::vec2 input::GetGlobalMousePosition()
 	{
 		int x, y;
