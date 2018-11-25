@@ -22,6 +22,7 @@ namespace md
 		void Close();
 
 		static glm::ivec2 &GetWindowSize();
+		static SDL_Window* GetSDLWindow();
 
 	private:
 		void SetupSDL();
@@ -32,8 +33,7 @@ namespace md
 		void Update();
 		void Render();
 
-		SDL_Window *m_Window;
-		SDL_Renderer *m_Renderer;
+		static SDL_Window *m_Window;
 		SDL_GLContext m_Context;
 		grid::GridMap* m_Grid;
 
@@ -43,12 +43,9 @@ namespace md
 
 		bool isRunning;
 
-#ifdef _DEBUG_
 		ImGuiIO io;
 		const char* glsl_version = "#version 130";
 		gui::Imgui m_imgui;
-#endif
-
 	};
 }
 

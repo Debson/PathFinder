@@ -11,6 +11,7 @@
 #include "interface.h"
 
 glm::ivec2 md::PathFinderApp::m_AppDimension = glm::ivec2(790, 600);
+SDL_Window *md::PathFinderApp::m_Window = NULL;
 
 md::PathFinderApp::PathFinderApp()
 {
@@ -37,9 +38,7 @@ void md::PathFinderApp::Start()
 	m_Grid->OnWindowResize(m_AppDimension);
 	isRunning = true;
 	
-#ifdef _DEBUG_
 	m_imgui.Start();
-#endif
 }
 
 void md::PathFinderApp::GameLoop()
@@ -98,7 +97,6 @@ void md::PathFinderApp::SetupGlew()
 	glLineWidth(1.f);
 
 
-#ifdef _DEBUG_
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
@@ -109,7 +107,6 @@ void md::PathFinderApp::SetupGlew()
 
 	// Setup style
 	ImGui::StyleColorsDark();
-#endif
 
 	glViewport(0, 0, m_AppDimension.x, m_AppDimension.y);
 }
@@ -118,12 +115,10 @@ void md::PathFinderApp::OnNewFrame()
 {
 	inputconf::StartNewFrame();
 
-#ifdef _DEBUG_
 	/* imgui */
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame(m_Window);
 	ImGui::NewFrame();
-#endif
 }
 
 void md::PathFinderApp::ProcessInput(SDL_Event* e)
@@ -197,15 +192,11 @@ void md::PathFinderApp::Render()
 	
 	// Draw colored squares
 	m_Grid->Render();
-	//shader::Draw();
 
-
-#ifdef _DEBUG_
 	m_imgui.Render();
 	glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-#endif
 
 	SDL_GL_SwapWindow(m_Window);
 
@@ -216,4 +207,9 @@ void md::PathFinderApp::Render()
 glm::ivec2 &md::PathFinderApp::GetWindowSize()
 {
 	return m_AppDimension;
+}
+
+SDL_Window *md::PathFinderApp::GetSDLWindow()
+{
+	return m_Window;
 }

@@ -34,7 +34,7 @@ namespace md
 			m_CurrentEditState = EditMode::None;
 		else if(input::IsKeyPressed(WallKeyCode) == true)
 			m_CurrentEditState = EditMode::Wall;
-		else if(input::IsKeyPressed(EraseKeyCode) == true)
+		else if(input::IsKeyPressed(EraseKeyCode) == true || input::IsKeyPressed(input::KeyCode::MouseRight) == true)
 			m_CurrentEditState = EditMode::Erase;
 		else if (input::IsKeyPressed(StartKeyCode) == true)
 			m_CurrentEditState = EditMode::Start;

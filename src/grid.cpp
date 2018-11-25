@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <queue>
+#include <vector>
 
 #include "shader_conf.h"
 #include "input.h"
@@ -10,19 +11,38 @@
 
 namespace md
 {
+	namespace grid
+	{
+		struct queueNode
+		{
+			Grid pt;  // The cordinates of a cell 
+			int dist;  // cell's distance of from the source 
+			std::vector<std::pair<uint32_t, uint32_t>> pairs;
+
+		};
+
+
+		std::vector<int8_t> rowNum = { -1, 0, 0, 1, -1,  1, 1, -1 };
+		std::vector<int8_t> colNum = { 0, -1, 1, 0, -1, -1, 1,  1 };
+
+		uint32_t start = 0;
+
+	}
 
 	std::vector<grid::GridDataType> grid::GridMap::m_Grid;
 	
-	uint32_t grid::GridMap::m_GridRows = 0;
+	uint32_t grid::GridMap::m_GridRows			= 0;
     grid::SavedGridSummary grid::GridMap::m_SavedGridSummary;
-	uint32_t grid::GridMap::m_GridColumns = 0;
+	uint32_t grid::GridMap::m_GridColumns		= 0;
 	glm::ivec2 grid::GridMap::m_GridDimensions;
-	float grid::GridMap::m_GridScale = 1.f;
+	float grid::GridMap::m_GridScale			= 1.f;
+	bool grid::GridMap::m_Diagonal				= false;
+	bool grid::GridMap::m_RenderPath			= true;
+	bool grid::GridMap::m_RenderAttemps			= false;
+	bool grid::GridMap::m_ShowSteps				= false;
+	int grid::GridMap::m_RenderSpeed			= 100;
 
-	grid::GridMap::GridMap()
-	{
-
-	}
+	grid::GridMap::GridMap() { }
 
 	grid::GridMap::~GridMap()
 	{
@@ -41,6 +61,30 @@ namespace md
 
 	void grid::GridMap::Render()
 	{
+		// Draw path if registered
+		if(m_SavedGridSummary.pathRenderData.render == true && m_SavedGridSummary.pathRenderData.timer.isFinished() == true && m_SavedGridSummary.attemptsRenderData.render == false)
+		{ 
+			auto pair = m_SavedGridSummary.pathRenderData.pairs[m_SavedGridSummary.pathRenderData.counter];
+			UpdateGridOnDraw(pair.first * m_GridColumns + pair.second, grid::CellType::Path);
+			m_SavedGridSummary.pathRenderData.counter++;
+			m_SavedGridSummary.pathRenderData.timer.Restart();
+
+			if (m_SavedGridSummary.pathRenderData.counter > m_SavedGridSummary.pathRenderData.pairs.size() - 1)
+				m_SavedGridSummary.pathRenderData.render = false;
+		}
+
+		// Draw attemps if registered
+		if (m_SavedGridSummary.attemptsRenderData.render == true && m_SavedGridSummary.attemptsRenderData.timer.isFinished() == true)
+		{
+			auto pair = m_SavedGridSummary.attemptsRenderData.pairs[m_SavedGridSummary.attemptsRenderData.counter];
+			UpdateGridOnDraw(pair.first * m_GridColumns + pair.second, grid::CellType::Attempt);
+			m_SavedGridSummary.attemptsRenderData.counter++;
+			m_SavedGridSummary.attemptsRenderData.timer.Restart();
+
+			if (m_SavedGridSummary.attemptsRenderData.counter > m_SavedGridSummary.attemptsRenderData.pairs.size() - 1)
+				m_SavedGridSummary.attemptsRenderData.render = false;
+		}
+
 		// Draw colored squares
 		shader::Draw();
 
@@ -98,8 +142,8 @@ namespace md
 					color = GRID_FINISH_COLOR;
 					break;
 				}
-				case(CellType::Step): {
-					color = GRID_STEP_COLOR;
+				case(CellType::Attempt): {
+					color = GRID_ATTEMPT_COLOR;
 					break;
 				}
 				case(CellType::Path): {
@@ -157,22 +201,24 @@ namespace md
 			break;
 		}
 		case(CellType::Start): {
-			if (m_SavedGridSummary.start.assigned == true)
-				break;
 			AssignGridData(index, cellType, GRID_START_COLOR);
 			m_SavedGridSummary.start.assigned = true;
 			break;
 		}
 		case(CellType::Finish): {
-			if (m_SavedGridSummary.finish.assigned == true)
-				break;
 			AssignGridData(index, cellType, GRID_FINISH_COLOR);
 			m_SavedGridSummary.finish.assigned = true;
 			break;
 		}
-		case(CellType::Step): {
-
-			AssignGridData(index, cellType, GRID_STEP_COLOR);
+		case(CellType::Attempt): {
+			
+			AssignGridData(index, cellType, GRID_ATTEMPT_COLOR);
+			
+			break;
+		}
+		case(CellType::Path): {
+			AssignGridData(index, cellType, GRID_PATH_COLOR);
+			
 			break;
 		}
 		}
@@ -206,19 +252,22 @@ namespace md
 			break;
 		}
 		case(interface::EditMode::Start): {
-			
+			if (m_SavedGridSummary.start.assigned == true)
+				break;
 			m_Grid[i].type = grid::CellType::Start;
 			UpdateGridOnDraw(i, grid::CellType::Start);
 			m_SavedGridSummary.start.row = i / m_GridColumns;
-			m_SavedGridSummary.start.column = i % m_GridColumns + 1;
+			m_SavedGridSummary.start.column = i % m_GridColumns;
 
 			break;
 		}
 		case(interface::EditMode::Finish): {
+			if (m_SavedGridSummary.finish.assigned == true)
+				break;
 			m_Grid[i].type = grid::CellType::Finish;
 			UpdateGridOnDraw(i, grid::CellType::Finish);
 			m_SavedGridSummary.finish.row = i / m_GridColumns;;
-			m_SavedGridSummary.finish.column = i % m_GridColumns + 1;
+			m_SavedGridSummary.finish.column = i % m_GridColumns;
 			break;
 		}
 		case(interface::EditMode::Erase): {
@@ -284,8 +333,11 @@ namespace md
 		delete[] newVertices;
 	}
 
-	int grid::GridMap::FindPath()
+	int grid::GridMap::SolveGrid()
 	{
+		if (m_SavedGridSummary.start.assigned == false || m_SavedGridSummary.finish.assigned == false)
+			return false;
+
 		uint32_t **mat = new uint32_t*[m_GridRows];
 		for (uint32_t i = 0; i < m_GridRows; ++i)
 			mat[i] = new uint32_t[m_GridColumns];
@@ -297,16 +349,17 @@ namespace md
 			for (uint32_t j = 0; j < m_GridColumns; j++)
 			{
 				if (GetGridAt(i, j)->type == CellType::Wall)
-					mat[i][j] = 0;
-				else
 					mat[i][j] = 1;
+				else
+					mat[i][j] = 0;
 				//std::cout << mat[i][j] << " ";
 			}
 			//std::cout << "\n";
 		}
 
+		
 
-		if (!mat[m_SavedGridSummary.start.row][m_SavedGridSummary.start.column - 1] || !mat[m_SavedGridSummary.finish.row][m_SavedGridSummary.finish.column - 1])
+		if (mat[m_SavedGridSummary.start.row][m_SavedGridSummary.start.column] || mat[m_SavedGridSummary.finish.row][m_SavedGridSummary.finish.column])
 			return -1;
 
 		bool **visited = new bool*[m_GridRows];
@@ -327,7 +380,7 @@ namespace md
 
 
 		// Mark the source cell as visited 
-		visited[m_SavedGridSummary.start.row][m_SavedGridSummary.start.column - 1] = true;
+		visited[m_SavedGridSummary.start.row][m_SavedGridSummary.start.column] = true;
 
 		/*for (uint32_t i = 0; i < m_GridRows; i++)
 		{
@@ -342,52 +395,95 @@ namespace md
 		std::queue<queueNode> q;
 
 		// Distance of source cell is 0 
-		Point src;
-		src.x = m_SavedGridSummary.start.row;
-		src.y = m_SavedGridSummary.start.column - 1;
+		Grid src;
+		src.column = m_SavedGridSummary.start.column;
+		src.row = m_SavedGridSummary.start.row;
 		queueNode s = { src, 0 };
 		q.push(s);  // Enqueue source cell 
+		std::vector<std::pair<uint32_t, uint32_t>> stepPairs;
 
 		// Do a BFS starting from source cell 
+		start = SDL_GetTicks();
 		while (!q.empty())
 		{
 			queueNode curr = q.front();
-			Point pt = curr.pt;
+			Grid pt = curr.pt;
 
 			// If we have reached the destination cell, 
 			// we are done 
-			if (pt.x == m_SavedGridSummary.finish.row && pt.y == m_SavedGridSummary.finish.column - 1)
+			if (pt.row == m_SavedGridSummary.finish.row && pt.column == m_SavedGridSummary.finish.column)
+			{
+				start = SDL_GetTicks();
+
+				OnGridSolved(&curr.pairs, &stepPairs);
+				
 				return curr.dist;
+			}
 
 			// Otherwise dequeue the front cell in the queue 
 			// and enqueue its adjacent cells 
 			q.pop();
 
-			for (int i = 0; i < 4; i++)
+			bool available = false;
+			std::vector<queueNode> availableNode;
+			for (int i = 0; i < (m_Diagonal ? rowNum.size() : rowNum.size() / 2); i++)
 			{
-				int row = pt.x + rowNum[i];
-				int col = pt.y + colNum[i];
+				int row = pt.row + rowNum[i];
+				int col = pt.column + colNum[i];
 
 				// if adjacent cell is valid, has path and 
 				// not visited yet, enqueue it. 
-				if (isValid(row, col) && mat[row][col] &&
+				if (isValid(row, col) && mat[row][col] == 0 &&
 					!visited[row][col])
 				{
-					//UpdateGridOnDraw(row * m_GridColumns + col, grid::CellType::Step);
-
-
+					available = true;
+					stepPairs.push_back(std::make_pair(row, col));
 					// mark cell as visited and enqueue it 
 					visited[row][col] = true;
 					//mat[row][col] = 5;
 					queueNode Adjcell = { {row, col},
 										  curr.dist + 1 };
+				
+					Adjcell.pairs = curr.pairs;
+					Adjcell.pairs.push_back(std::make_pair(row, col));
 					q.push(Adjcell);
 				}
 			}
+
 		}
 
 		// Return -1 if destination cannot be reached 
 		return -1;
+	}
+
+	void grid::GridMap::SetDiagonal(bool val)
+	{
+		m_Diagonal = val;
+	}
+
+	void grid::GridMap::SetRenderPath(bool val)
+	{
+		m_RenderPath = val;
+	}
+
+	void grid::GridMap::SetRenderAttemps(bool val)
+	{
+		m_RenderAttemps = val;
+	}
+
+	void grid::GridMap::SetShowSteps(bool val)
+	{
+		m_ShowSteps = val;
+	}
+
+	void grid::GridMap::SetRenderSpeed(uint32_t speed)
+	{
+		uint32_t s = speed;
+		/*if (speed > 0)
+			s = 5000 / speed;*/
+		std::cout << s << std::endl;
+		m_SavedGridSummary.pathRenderData.timer.ChangeTargetTime(s);
+		m_SavedGridSummary.attemptsRenderData.timer.ChangeTargetTime(s);
 	}
 
 	void grid::GridMap::EraseGrid(uint32_t index)
@@ -428,7 +524,6 @@ namespace md
 			(col >= 0) && (col < m_GridColumns);
 	}
 
-
 	void grid::GridMap::AssignGridData(uint32_t index, grid::CellType cellType, glm::vec3 color)
 	{
 		float sizendcX = (float)GridSize() / (float)m_GridDimensions.x * 2.f;
@@ -449,7 +544,86 @@ namespace md
 		transData.row = row;
 		transData.column = column;
 		m_SavedGridSummary.translations_ref.push_back(transData);
-		std::sort(m_SavedGridSummary.grid_data.begin(), m_SavedGridSummary.grid_data.end(), [&](const grid::SavedGridData& a, const grid::SavedGridData & b) { return a.row < b.row; });
+		//std::sort(m_SavedGridSummary.grid_data.begin(), m_SavedGridSummary.grid_data.end(), [&](const grid::SavedGridData& a, const grid::SavedGridData & b) { return a.row < b.row; });
+	}
+
+	void grid::GridMap::OnGridSolved(std::vector<std::pair<uint32_t, uint32_t>> *path, std::vector<std::pair<uint32_t, uint32_t>> *attempts)
+	{
+		// Render attempts
+		
+		if (m_RenderAttemps == true && m_ShowSteps == true)
+		{
+			if (m_RenderPath == true)
+			{
+				/*for (auto & i : *path)
+				{
+					auto it = std::find_if(attempts->begin(), attempts->end(), [&]
+					(const std::pair<uint32_t, uint32_t> & ref) { return ref.first == i.first && ref.second == i.second;  });
+					if (it != attempts->end())
+						attempts->erase(it);
+				}*/
+			}
+
+			m_SavedGridSummary.attemptsRenderData = AttemptsRenderData(*attempts);
+		}
+		else if (m_RenderAttemps == true)
+		{
+			if (m_RenderPath == true)
+			{
+				/*for (auto & i : *path)
+				{
+					auto it = std::find_if(attempts->begin(), attempts->end(), [&]
+					(const std::pair<uint32_t, uint32_t> & ref) { return ref.first == i.first && ref.second == i.second;  });
+					if (it != attempts->end())
+						attempts->erase(it);
+				}*/
+			}
+
+			for (auto & i : *attempts)
+			{
+				AssignGridData(i.first * m_GridRows + i.second, CellType::Attempt, GRID_ATTEMPT_COLOR);
+			}
+
+			shader::UpdateOnCollision(m_SavedGridSummary.translations.data(), m_SavedGridSummary.translations.size());
+		}
+
+		// Render path
+		if (m_RenderPath == true && m_ShowSteps == true)
+		{
+			m_SavedGridSummary.pathRenderData = PathRenderData(*path);
+		}
+		else if(m_RenderPath == true)
+		{
+			for (auto & i : *path)
+			{
+				AssignGridData(i.first * m_GridColumns + i.second, CellType::Path, GRID_PATH_COLOR);
+			}
+
+			
+
+			shader::UpdateOnCollision(m_SavedGridSummary.translations.data(), m_SavedGridSummary.translations.size());
+		}
+	}
+
+	void grid::GridMap::ClearGrid()
+	{
+		m_SavedGridSummary.grid_data.clear();
+		m_SavedGridSummary.translations.clear();
+		m_SavedGridSummary.translations_ref.clear();
+		m_SavedGridSummary.start.assigned = false;
+		m_SavedGridSummary.finish.assigned = false;
+		m_SavedGridSummary.pathRenderData.render = false;
+		m_SavedGridSummary.attemptsRenderData.render = false;
+		
+		for (int i = 0; i < m_GridRows; i++)
+		{
+			for (int j = 0; j < m_GridColumns; j++)
+			{
+				m_Grid[i * m_GridColumns + j].type = CellType::None;
+			}
+		}
+		shader::UpdateOnCollision(m_SavedGridSummary.translations.data(), m_SavedGridSummary.translations.size());
+
 	}
 
 #ifdef _DEBUG_
@@ -467,17 +641,6 @@ namespace md
 			}
 			std::cout << std::endl;
 		}
-	}
-
-	void grid::GridMap::ClearGrid()
-	{
-		m_SavedGridSummary.grid_data.clear();
-		m_SavedGridSummary.translations.clear();
-		m_SavedGridSummary.translations_ref.clear();
-		m_SavedGridSummary.start.assigned = false;
-		m_SavedGridSummary.finish.assigned = false;
-		shader::UpdateOnCollision(m_SavedGridSummary.translations.data(), m_SavedGridSummary.translations.size());
-
 	}
 #endif
 

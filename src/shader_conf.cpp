@@ -159,7 +159,7 @@ namespace md
 		m_DrawCalls = drawCalls;
 		glBindBuffer(GL_ARRAY_BUFFER, m_InstanceVBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(grid::VertexData) * drawCalls, data, GL_STATIC_DRAW);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);;
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 
 	void shader::Draw()

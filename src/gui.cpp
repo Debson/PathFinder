@@ -14,6 +14,12 @@ namespace md
 	{
 		float lineWidth = 1;
 		std::string path = "Path: ";
+		int speed = 50;
+		bool diagonal = false;
+		bool renderPath = true;
+		bool renderAttemps = false;
+		bool showSteps = false;
+		
 	}
 
 	gui::Imgui::Imgui()
@@ -32,46 +38,65 @@ namespace md
 
 	void gui::Imgui::Render()
 	{
-		ImGui::Begin("_DEBUG_");
+		ImGui::Begin("PathFinder");
+#ifdef _DEBUG_
 		if (ImGui::SliderFloat("Line width", &lineWidth, 1.f, 10.f))
 		{
 			glLineWidth(lineWidth);
 		}
-
-		/*if (ImGui::Button("Update lines"))
-		{
-			float space = 20.f;
-			int lineCount = (float)PathFinderApp::GetWindowSize().y / space;
-			float step = 2.f / lineCount;
-
-			float *newVertices = new float[lineCount * 2];
-			float curr = 1.f;
-			for (int i = 0; i < lineCount * 2; i += 2)
-			{
-				newVertices[i] = -1.f;
-				newVertices[i + 1] = curr;
-				curr -= step;
-				//std::cout << newVertices[i] << " : " << newVertices[i + 1] << std::endl;
-			}
-			
-			shader::UpdateGridHorizontal(newVertices, lineCount);
-			delete newVertices;
-		}*/
-
 		if (ImGui::Button("Print grid"))
 		{
 			grid::GridMap::PrintGrid();
 		}
+#endif
 
 		if (ImGui::Button("Clear grid"))
 		{
 			grid::GridMap::ClearGrid();
-			path = "Path: ";
+			path = "Path Length: ";
+		}
+
+		int i = ImGui::GetWindowSize().x;
+
+
+		if (ImGui::Checkbox("Diagonal Moves Enabled", &diagonal))
+		{
+			grid::GridMap::SetDiagonal(diagonal);
+		}
+
+		if (ImGui::Checkbox("Show Steps", &showSteps))
+		{
+			grid::GridMap::SetShowSteps(showSteps);
+			grid::GridMap::SetRenderSpeed(speed);
+		}
+
+		if (showSteps)
+		{
+			if (ImGui::SliderInt("Speed", &speed, 0, 100))
+			{
+				grid::GridMap::SetRenderSpeed(speed);
+			}
+		}
+		
+		if (ImGui::Checkbox("Show Path", &renderPath))
+		{
+			grid::GridMap::SetRenderPath(renderPath);
+
+		}
+		ImGui::SameLine(210.f);
+
+		if (ImGui::Checkbox("Show Attemps", &renderAttemps))
+		{
+			grid::GridMap::SetRenderAttemps(renderAttemps);
 		}
 
 		if (ImGui::Button("FindPath"))
 		{
-			path += std::to_string(grid::GridMap::FindPath());
+			int res = grid::GridMap::SolveGrid();
+			if (res < 0)
+				path += "No path";
+			else
+				path += std::to_string(grid::GridMap::SolveGrid());
 		}
 		ImGui::Text(path.c_str());
 
@@ -99,9 +124,12 @@ namespace md
 			break;
 		}						  
 		}
+
 		ImGui::Text(state.c_str());
 
+#ifdef _DEBUG_
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+#endif
 		ImGui::End();
 	}
 
