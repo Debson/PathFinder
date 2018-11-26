@@ -48,11 +48,19 @@ namespace md
 		{
 			grid::GridMap::PrintGrid();
 		}
+
+		ImGui::Text(("Objects count: " + std::to_string(grid::GridMap::GetObjectsCount())).c_str());
 #endif
 
 		if (ImGui::Button("Clear grid"))
 		{
 			grid::GridMap::ClearGrid();
+			path = "Path Length: ";
+		}
+
+		if (ImGui::Button("Clear path&attempts"))
+		{
+			grid::GridMap::ClearGridPathAndAttempts();
 			path = "Path Length: ";
 		}
 
@@ -92,11 +100,16 @@ namespace md
 
 		if (ImGui::Button("FindPath"))
 		{
+			grid::GridMap::ClearGridPathAndAttempts();
+			path = "Path Length: ";
 			int res = grid::GridMap::SolveGrid();
 			if (res < 0)
 				path += "No path";
 			else
-				path += std::to_string(grid::GridMap::SolveGrid());
+				path += std::to_string(res);
+
+			if(showSteps)
+				grid::GridMap::SetRenderSpeed(speed);
 		}
 		ImGui::Text(path.c_str());
 

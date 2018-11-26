@@ -21,16 +21,10 @@ namespace md
 
 		};
 
-
 		std::vector<int8_t> rowNum = { -1, 0, 0, 1, -1,  1, 1, -1 };
 		std::vector<int8_t> colNum = { 0, -1, 1, 0, -1, -1, 1,  1 };
-
-		uint32_t start = 0;
-
 	}
 
-	std::vector<grid::GridDataType> grid::GridMap::m_Grid;
-	
 	uint32_t grid::GridMap::m_GridRows			= 0;
     grid::SavedGridSummary grid::GridMap::m_SavedGridSummary;
 	uint32_t grid::GridMap::m_GridColumns		= 0;
@@ -64,43 +58,42 @@ namespace md
 		// Draw path if registered
 		if(m_SavedGridSummary.pathRenderData.render == true && m_SavedGridSummary.pathRenderData.timer.isFinished() == true && m_SavedGridSummary.attemptsRenderData.render == false)
 		{ 
-			auto pair = m_SavedGridSummary.pathRenderData.pairs[m_SavedGridSummary.pathRenderData.counter];
-			UpdateGridOnDraw(pair.first * m_GridColumns + pair.second, grid::CellType::Path);
-			m_SavedGridSummary.pathRenderData.counter++;
-			m_SavedGridSummary.pathRenderData.timer.Restart();
+			for (uint32_t i = 0; i < m_SavedGridSummary.pathRenderData.step; i++)
+			{
+				auto pair = m_SavedGridSummary.pathRenderData.pairs[m_SavedGridSummary.pathRenderData.counter];
+				UpdateGridOnDraw(pair.first * m_GridColumns + pair.second, grid::CellType::Path);
+				m_SavedGridSummary.pathRenderData.counter++;
+				m_SavedGridSummary.pathRenderData.timer.Restart();
+				if (m_SavedGridSummary.pathRenderData.counter > m_SavedGridSummary.pathRenderData.pairs.size() - 1)
+				{
+					m_SavedGridSummary.pathRenderData.render = false;
+					break;
+				}
+			}
 
-			if (m_SavedGridSummary.pathRenderData.counter > m_SavedGridSummary.pathRenderData.pairs.size() - 1)
-				m_SavedGridSummary.pathRenderData.render = false;
 		}
 
 		// Draw attemps if registered
 		if (m_SavedGridSummary.attemptsRenderData.render == true && m_SavedGridSummary.attemptsRenderData.timer.isFinished() == true)
 		{
-			auto pair = m_SavedGridSummary.attemptsRenderData.pairs[m_SavedGridSummary.attemptsRenderData.counter];
-			UpdateGridOnDraw(pair.first * m_GridColumns + pair.second, grid::CellType::Attempt);
-			m_SavedGridSummary.attemptsRenderData.counter++;
-			m_SavedGridSummary.attemptsRenderData.timer.Restart();
+			for (uint32_t i = 0; i < m_SavedGridSummary.attemptsRenderData.step; i++)
+			{
+				auto pair = m_SavedGridSummary.attemptsRenderData.pairs[m_SavedGridSummary.attemptsRenderData.counter];
+				UpdateGridOnDraw(pair.first * m_GridColumns + pair.second, grid::CellType::Attempt);
+				m_SavedGridSummary.attemptsRenderData.counter++;
+				m_SavedGridSummary.attemptsRenderData.timer.Restart();
+				if (m_SavedGridSummary.attemptsRenderData.counter > m_SavedGridSummary.attemptsRenderData.pairs.size() - 1)
+				{
+					m_SavedGridSummary.attemptsRenderData.render = false;
+					break;
+				}
+			}
 
-			if (m_SavedGridSummary.attemptsRenderData.counter > m_SavedGridSummary.attemptsRenderData.pairs.size() - 1)
-				m_SavedGridSummary.attemptsRenderData.render = false;
 		}
 
 		// Draw colored squares
 		shader::Draw();
 
-	}
-	/*	min c, r: 1 */
-	grid::GridDataType *grid::GridMap::GetGridAt(uint32_t r, uint32_t c)
-	{
-		if (r == 0)
-			return &m_Grid[c];
-		
-		if (r > 0 && c == 0)
-			return &m_Grid[r * m_GridColumns];
-		if (r * m_GridColumns + c >= m_GridColumns * m_GridRows)
-			return &m_Grid[m_GridColumns * m_GridRows - 1];
-
-		return &m_Grid[r * m_GridColumns + c];
 	}
 
 	void grid::GridMap::UpdateGridOnResize(uint16_t rows, uint16_t columns)
@@ -108,22 +101,25 @@ namespace md
 		m_GridRows = rows;
 		m_GridColumns = columns;
 
-		m_Grid.clear();
-		m_Grid.resize(rows * columns);
-
 		float sizendcX = (float)GridSize() / (float)m_GridDimensions.x * 2.f;
 		float sizendcY = (float)GridSize() / (float)m_GridDimensions.y * 2.f;
 
 		m_SavedGridSummary.translations.clear();
 		m_SavedGridSummary.translations_ref.clear();
+
+		m_SavedGridSummary.grid_rep.clear();
+		for (uint32_t i = 0; i < m_GridRows * m_GridColumns; i++)
+			m_SavedGridSummary.grid_rep.push_back(CellType::None);
+
 		for(auto & i : m_SavedGridSummary.grid_data)
 		{
 			if (i.row <= rows && i.column <= columns)
 			{
-				GetGridAt(i.row, i.column)->type = i.type;
+			
+				*GetGridAt(i.row, i.column) = (uint32_t)i.type;
 				
 				VertexData vertData;
-				vertData.translation = glm::vec2(sizendcX * i.column, sizendcY * i.row * -1);
+				vertData.translation = glm::vec2(sizendcX * (i.column + 1), sizendcY * i.row * -1);
 				glm::vec3 color;
 				switch (i.type)
 				{
@@ -189,7 +185,7 @@ namespace md
 			}
 		case(CellType::Wall): {
 			int row = index / m_GridColumns;
-			int column = index % m_GridColumns + 1;
+			int column = index % m_GridColumns;
 			// check if already exists
 			auto it = std::find_if(m_SavedGridSummary.grid_data.begin(), m_SavedGridSummary.grid_data.end(),
 				[&](const grid::SavedGridData & ref) { return ref.row == row && ref.column == column; });
@@ -203,11 +199,15 @@ namespace md
 		case(CellType::Start): {
 			AssignGridData(index, cellType, GRID_START_COLOR);
 			m_SavedGridSummary.start.assigned = true;
+			m_SavedGridSummary.start.row = index / m_GridColumns;
+			m_SavedGridSummary.start.column = index % m_GridColumns;
 			break;
 		}
 		case(CellType::Finish): {
 			AssignGridData(index, cellType, GRID_FINISH_COLOR);
 			m_SavedGridSummary.finish.assigned = true;
+			m_SavedGridSummary.finish.row = index / m_GridColumns;;
+			m_SavedGridSummary.finish.column = index % m_GridColumns;
 			break;
 		}
 		case(CellType::Attempt): {
@@ -217,6 +217,15 @@ namespace md
 			break;
 		}
 		case(CellType::Path): {
+			int row = index / m_GridColumns;
+			int column = index % m_GridColumns;
+			auto it = std::find_if(m_SavedGridSummary.translations_ref.begin(), m_SavedGridSummary.translations_ref.end(),
+				[&](const grid::Grid & ref) { return ref.row == row && ref.column == column; });
+			if (it != m_SavedGridSummary.translations_ref.end())
+			{
+				m_SavedGridSummary.translations.erase(m_SavedGridSummary.translations.begin() + std::distance(m_SavedGridSummary.translations_ref.begin(), it));
+				m_SavedGridSummary.translations_ref.erase(it);
+			}
 			AssignGridData(index, cellType, GRID_PATH_COLOR);
 			
 			break;
@@ -243,37 +252,33 @@ namespace md
 		uint32_t i = x / GridSize();
 		i += y / GridSize() * m_GridColumns;
 		
+
+		if (m_SavedGridSummary.grid_rep.at(i) != (uint32_t)CellType::None)
+			return;
 		
+
+		*GetGridAt(i / m_GridColumns, i % m_GridColumns) = (uint32_t)interface::GetEditState();
 		switch (interface::GetEditState())
 		{
 		case(interface::EditMode::Wall): {
-			m_Grid[i].type = grid::CellType::Wall;
 			UpdateGridOnDraw(i, grid::CellType::Wall);
 			break;
 		}
 		case(interface::EditMode::Start): {
 			if (m_SavedGridSummary.start.assigned == true)
-				break;
-			m_Grid[i].type = grid::CellType::Start;
+				EraseGrid(m_SavedGridSummary.start.row * m_GridColumns + m_SavedGridSummary.start.column);
 			UpdateGridOnDraw(i, grid::CellType::Start);
-			m_SavedGridSummary.start.row = i / m_GridColumns;
-			m_SavedGridSummary.start.column = i % m_GridColumns;
-
 			break;
 		}
 		case(interface::EditMode::Finish): {
 			if (m_SavedGridSummary.finish.assigned == true)
-				break;
-			m_Grid[i].type = grid::CellType::Finish;
+				EraseGrid(m_SavedGridSummary.finish.row * m_GridColumns + m_SavedGridSummary.finish.column);
 			UpdateGridOnDraw(i, grid::CellType::Finish);
-			m_SavedGridSummary.finish.row = i / m_GridColumns;;
-			m_SavedGridSummary.finish.column = i % m_GridColumns;
 			break;
 		}
 		case(interface::EditMode::Erase): {
 			if (m_SavedGridSummary.translations.empty() == true)
 				break;
-			m_Grid[i].type = grid::CellType::None;
 			EraseGrid(i);
 			UpdateGridOnDraw(i, grid::CellType::None);
 			break;
@@ -285,7 +290,6 @@ namespace md
 	void grid::GridMap::OnWindowResize(glm::ivec2 newDim)
 	{
 		m_GridDimensions = newDim;
-
 
 		int add = m_GridDimensions.y % GridSize();
 		int size = m_GridDimensions.y + (add > 0 ? GridSize() - add : 0);
@@ -320,15 +324,10 @@ namespace md
 			curr += step;
 			//std::cout << newVertices[i] << " : " << newVertices[i + 1] << std::endl;
 		}
-		
 
 		shader::UpdateGridVertical(newVertices, lineCountVert);
-
 		
 		UpdateGridOnResize(lineCountHori, lineCountVert);
-
-
-		
 
 		delete[] newVertices;
 	}
@@ -340,43 +339,46 @@ namespace md
 
 		uint32_t **mat = new uint32_t*[m_GridRows];
 		for (uint32_t i = 0; i < m_GridRows; ++i)
+		{
 			mat[i] = new uint32_t[m_GridColumns];
+			memset(mat[i], 0, sizeof(uint32_t) * m_GridColumns);
+		}
 
-
-		std::cout << "\n";
+		for (auto & i : m_SavedGridSummary.grid_data)
+		{
+			if(i.type == CellType::Wall)
+				mat[i.row][i.column] = 1;
+		}
+#if 0
 		for (uint32_t i = 0; i < m_GridRows; i++)
 		{
 			for (uint32_t j = 0; j < m_GridColumns; j++)
 			{
-				if (GetGridAt(i, j)->type == CellType::Wall)
-					mat[i][j] = 1;
-				else
-					mat[i][j] = 0;
-				//std::cout << mat[i][j] << " ";
+				std::cout << mat[i][j] << " ";
 			}
-			//std::cout << "\n";
+			std::cout << "\n";
 		}
-
-		
-
+#endif
 		if (mat[m_SavedGridSummary.start.row][m_SavedGridSummary.start.column] || mat[m_SavedGridSummary.finish.row][m_SavedGridSummary.finish.column])
 			return -1;
 
 		bool **visited = new bool*[m_GridRows];
 		for (uint32_t i = 0; i < m_GridRows; ++i)
+		{
 			visited[i] = new bool[m_GridColumns];
+			memset(visited[i], false, sizeof(bool) * m_GridColumns);
+		}
 
-		//memset(visited, false, sizeof(bool) * m_GridRows * m_GridRows * m_GridColumns);
-
+#if 0
 		for (uint32_t i = 0; i < m_GridRows; i++)
 		{
 			for (uint32_t j = 0; j < m_GridColumns; j++)
 			{
-				visited[i][j] = false;
-				//std::cout << visited[i][j] << " ";
+				std::cout << visited[i][j] << " ";
 			}
-			//std::cout << "\n";
+			std::cout << "\n";
 		}
+#endif
 
 
 		// Mark the source cell as visited 
@@ -403,7 +405,6 @@ namespace md
 		std::vector<std::pair<uint32_t, uint32_t>> stepPairs;
 
 		// Do a BFS starting from source cell 
-		start = SDL_GetTicks();
 		while (!q.empty())
 		{
 			queueNode curr = q.front();
@@ -413,8 +414,17 @@ namespace md
 			// we are done 
 			if (pt.row == m_SavedGridSummary.finish.row && pt.column == m_SavedGridSummary.finish.column)
 			{
-				start = SDL_GetTicks();
-
+				curr.pairs.pop_back();
+				std::pair<uint32_t, uint32_t> start(m_SavedGridSummary.start.row, m_SavedGridSummary.start.column);
+				std::pair<uint32_t, uint32_t> finish(m_SavedGridSummary.finish.row, m_SavedGridSummary.finish.column);
+				auto it = std::find_if(stepPairs.begin(), stepPairs.end(), [&]
+				(const std::pair<uint32_t, uint32_t> & ref) { return ref.first == start.first && ref.second == start.second; });
+				if (it != stepPairs.end())
+					stepPairs.erase(it);
+				it = std::find_if(stepPairs.begin(), stepPairs.end(), [&]
+				(const std::pair<uint32_t, uint32_t> & ref) { return ref.first == finish.first && ref.second == finish.second; });
+				if (it != stepPairs.end())
+					stepPairs.erase(it);
 				OnGridSolved(&curr.pairs, &stepPairs);
 				
 				return curr.dist;
@@ -456,6 +466,11 @@ namespace md
 		return -1;
 	}
 
+	uint32_t *grid::GridMap::GetGridAt(uint32_t row, uint32_t col)
+	{
+		return &m_SavedGridSummary.grid_rep.at(row * m_GridColumns + col);
+	}
+
 	void grid::GridMap::SetDiagonal(bool val)
 	{
 		m_Diagonal = val;
@@ -486,10 +501,14 @@ namespace md
 		m_SavedGridSummary.attemptsRenderData.timer.ChangeTargetTime(s);
 	}
 
-	void grid::GridMap::EraseGrid(uint32_t index)
+	void grid::GridMap::EraseGrid(uint32_t index, CellType cellType)
 	{
 		int row = index / m_GridColumns;
-		int column = index % m_GridColumns + 1;
+		int column = index % m_GridColumns;
+
+
+		m_SavedGridSummary.grid_rep.at(index) = CellType::None;
+
 
 		auto it = std::find_if(m_SavedGridSummary.grid_data.begin(), m_SavedGridSummary.grid_data.end(),
 			[&](const grid::SavedGridData & ref) { return ref.row == row && ref.column == column; });
@@ -504,6 +523,7 @@ namespace md
 				m_SavedGridSummary.start.assigned = false;
 			if (m_SavedGridSummary.grid_data.at(std::distance(m_SavedGridSummary.grid_data.begin(), it)).type == grid::CellType::Finish)
 				m_SavedGridSummary.finish.assigned = false;
+
 
 			m_SavedGridSummary.grid_data.erase(it);
 
@@ -529,14 +549,15 @@ namespace md
 		float sizendcX = (float)GridSize() / (float)m_GridDimensions.x * 2.f;
 		float sizendcY = (float)GridSize() / (float)m_GridDimensions.y * 2.f;
 		int row = index / m_GridColumns;
-		int column = index % m_GridColumns + 1;
+		int column = index % m_GridColumns;
+
 
 		grid::SavedGridData gridData;
 		gridData.row = row;
 		gridData.column = column;
 		gridData.type = cellType;
 		VertexData vertData;
-		vertData.translation = glm::vec2(sizendcX * column, sizendcY * row * -1);
+		vertData.translation = glm::vec2(sizendcX * (column + 1), sizendcY * row * -1);
 		vertData.color = color;
 		m_SavedGridSummary.grid_data.push_back(gridData);
 		m_SavedGridSummary.translations.push_back(vertData);
@@ -570,19 +591,22 @@ namespace md
 		{
 			if (m_RenderPath == true)
 			{
-				/*for (auto & i : *path)
+				for (auto & i : *path)
 				{
 					auto it = std::find_if(attempts->begin(), attempts->end(), [&]
 					(const std::pair<uint32_t, uint32_t> & ref) { return ref.first == i.first && ref.second == i.second;  });
 					if (it != attempts->end())
 						attempts->erase(it);
-				}*/
+				}
 			}
 
 			for (auto & i : *attempts)
 			{
-				AssignGridData(i.first * m_GridRows + i.second, CellType::Attempt, GRID_ATTEMPT_COLOR);
+				*GetGridAt(i.first, i.second) = (uint32_t)CellType::Attempt;
+				AssignGridData(i.first * m_GridColumns + i.second, CellType::Attempt, GRID_ATTEMPT_COLOR);
 			}
+
+			m_SavedGridSummary.attemptsRenderData.pairs = *attempts;
 
 			shader::UpdateOnCollision(m_SavedGridSummary.translations.data(), m_SavedGridSummary.translations.size());
 		}
@@ -596,10 +620,10 @@ namespace md
 		{
 			for (auto & i : *path)
 			{
+				*GetGridAt(i.first, i.second) = (uint32_t)CellType::Path;
 				AssignGridData(i.first * m_GridColumns + i.second, CellType::Path, GRID_PATH_COLOR);
 			}
-
-			
+			m_SavedGridSummary.pathRenderData.pairs = *path;
 
 			shader::UpdateOnCollision(m_SavedGridSummary.translations.data(), m_SavedGridSummary.translations.size());
 		}
@@ -614,16 +638,50 @@ namespace md
 		m_SavedGridSummary.finish.assigned = false;
 		m_SavedGridSummary.pathRenderData.render = false;
 		m_SavedGridSummary.attemptsRenderData.render = false;
+		for (auto & i : m_SavedGridSummary.grid_rep)
+			i = CellType::None;
 		
-		for (int i = 0; i < m_GridRows; i++)
+		shader::UpdateOnCollision(m_SavedGridSummary.translations.data(), m_SavedGridSummary.translations.size());
+	}
+
+	void grid::GridMap::ClearGridPathAndAttempts()
+	{
+		if (m_SavedGridSummary.pathRenderData.pairs.empty() == false)
 		{
-			for (int j = 0; j < m_GridColumns; j++)
+			auto back = m_SavedGridSummary.pathRenderData.pairs.back();
+			if(back.first == m_SavedGridSummary.finish.row && back.second == m_SavedGridSummary.finish.column)
+				m_SavedGridSummary.pathRenderData.pairs.pop_back();
+			for (auto & i : m_SavedGridSummary.pathRenderData.pairs)
 			{
-				m_Grid[i * m_GridColumns + j].type = CellType::None;
+				EraseGrid(i.first * m_GridColumns + i.second);
 			}
 		}
-		shader::UpdateOnCollision(m_SavedGridSummary.translations.data(), m_SavedGridSummary.translations.size());
+		m_SavedGridSummary.pathRenderData.pairs = std::vector<std::pair<uint32_t, uint32_t>>();
 
+		if (m_SavedGridSummary.attemptsRenderData.pairs.empty() == false)
+		{
+			std::pair<uint32_t, uint32_t> start(m_SavedGridSummary.start.row, m_SavedGridSummary.start.column);
+			std::pair<uint32_t, uint32_t> finish(m_SavedGridSummary.finish.row, m_SavedGridSummary.finish.column);
+			auto it = std::find_if(m_SavedGridSummary.attemptsRenderData.pairs.begin(), m_SavedGridSummary.attemptsRenderData.pairs.end(), [&]
+			(const std::pair<uint32_t, uint32_t> & ref) { return ref.first == start.first && ref.second == start.second; });
+			if (it != m_SavedGridSummary.attemptsRenderData.pairs.end())
+				m_SavedGridSummary.attemptsRenderData.pairs.erase(it);
+			it = std::find_if(m_SavedGridSummary.attemptsRenderData.pairs.begin(), m_SavedGridSummary.attemptsRenderData.pairs.end(), [&]
+			(const std::pair<uint32_t, uint32_t> & ref) { return ref.first == finish.first && ref.second == finish.second; });
+			if (it != m_SavedGridSummary.attemptsRenderData.pairs.end())
+				m_SavedGridSummary.attemptsRenderData.pairs.erase(it);
+
+			for (auto & i : m_SavedGridSummary.attemptsRenderData.pairs)
+			{
+				EraseGrid(i.first * m_GridColumns + i.second);
+			}
+		}
+		m_SavedGridSummary.attemptsRenderData.pairs = std::vector<std::pair<uint32_t, uint32_t>>();
+
+		m_SavedGridSummary.pathRenderData.render = false;
+		m_SavedGridSummary.attemptsRenderData.render = false;
+		
+		shader::UpdateOnCollision(m_SavedGridSummary.translations.data(), m_SavedGridSummary.translations.size());
 	}
 
 #ifdef _DEBUG_
@@ -634,13 +692,15 @@ namespace md
 		{
 			for (int j = 0; j < m_GridColumns; j++)
 			{
-				if(m_Grid[i * m_GridColumns + j].type == CellType::None)
-					std::cout << 0 << " ";
-				else
-					std::cout << 1 << " ";
+				std::cout << *GetGridAt(i, j) << " ";
 			}
 			std::cout << std::endl;
 		}
+	}
+
+	int grid::GridMap::GetObjectsCount()
+	{
+		return m_SavedGridSummary.grid_data.size();
 	}
 #endif
 
