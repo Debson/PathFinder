@@ -18,6 +18,7 @@ namespace md
 			void Start();
 			void Restart();
 			void ChangeTargetTime(uint32_t newtt);
+			uint32_t GetTicks();
 				
 			bool isFinished();
 		private:

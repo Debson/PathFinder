@@ -24,6 +24,11 @@ namespace md
 		m_TargetTime = newtt;
 	}
 
+	uint32_t timer::Timer::GetTicks()
+	{
+		return SDL_GetTicks() - m_StartTicks;
+	}
+
 	bool timer::Timer::isFinished()
 	{
 		return (SDL_GetTicks() - m_StartTicks > m_TargetTime);

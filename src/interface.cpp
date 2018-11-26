@@ -41,23 +41,27 @@ namespace md
 		else if (input::IsKeyPressed(FinishKeyCode) == true)
 			m_CurrentEditState = EditMode::Finish;
 
-		// Edit scale of gird
-		if (input::IsScrollForwardActive() == true)
-		{
-			m_GridScale += GRID_SCALE_STEP;
-			if (m_GridScale > GRID_MAX_SCALE)
-				m_GridScale = GRID_MAX_SCALE;
-			grid::GridMap::UpdateGridScale(m_GridScale);
-			//std::cout << m_GridScale << std::endl;
 
-		}
-		else if (input::IsScrollBackwardActive() == true)
+		if (grid::GridMap::IsRendering() == false)
 		{
-			m_GridScale -= GRID_SCALE_STEP;
-			if (m_GridScale < GRID_MIN_SCALE)
-				m_GridScale = GRID_MIN_SCALE;
-			grid::GridMap::UpdateGridScale(m_GridScale);
-			//std::cout << m_GridScale << std::endl;
+			// Edit scale of gird
+			if (input::IsScrollForwardActive() == true)
+			{
+				m_GridScale += GRID_SCALE_STEP;
+				if (m_GridScale > GRID_MAX_SCALE)
+					m_GridScale = GRID_MAX_SCALE;
+				grid::GridMap::UpdateGridScale(m_GridScale);
+				//std::cout << m_GridScale << std::endl;
+
+			}
+			else if (input::IsScrollBackwardActive() == true)
+			{
+				m_GridScale -= GRID_SCALE_STEP;
+				if (m_GridScale < GRID_MIN_SCALE)
+					m_GridScale = GRID_MIN_SCALE;
+				grid::GridMap::UpdateGridScale(m_GridScale);
+				//std::cout << m_GridScale << std::endl;
+			}
 		}
 	}
 

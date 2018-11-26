@@ -62,9 +62,11 @@ namespace grid
 	struct PathRenderData
 	{
 		PathRenderData() { };
-		PathRenderData(std::vector<std::pair<uint32_t, uint32_t>> p) : counter(0), step(0), pairs(p), render(true)
+		PathRenderData(std::vector<std::pair<uint32_t, uint32_t>> p) : counter(0), pairs(p), render(true)
 		{ 
 			step = pairs.size() * 0.01f;
+			if (step <= 0)
+				step = 1;
 			timer = timer::Timer(GRID_BASE_RENDER_DELAY); 
 			timer.Start();
 		};
@@ -81,6 +83,8 @@ namespace grid
 		AttemptsRenderData(std::vector<std::pair<uint32_t, uint32_t>> p) : counter(0), pairs(p), render(true)
 		{
 			step = pairs.size() * 0.01f;
+			if (step <= 0)
+				step = 1;
 			timer = timer::Timer(GRID_BASE_RENDER_DELAY);
 			timer.Start();
 		};
@@ -130,13 +134,18 @@ namespace grid
 		static void SetRenderSpeed(uint32_t speed);
 		static void ClearGrid();
 		static void ClearGridPathAndAttempts();
+		static bool IsActive();
+		static void SetActive(bool val);
+		static bool IsRendering();
+		static uint32_t GetCalculationsTime();
 #ifdef _DEBUG_
 		static void PrintGrid();
 		static int GetObjectsCount();
 #endif
 
 	private:
-		static void EraseGrid(uint32_t i, CellType cellType = CellType::Wall);
+		static bool EraseGrid(uint32_t i);
+		static void EraseGrid(CellType cellType);
 		static uint32_t GridSize();
 		static bool isValid(uint32_t row, uint32_t col);
 		static void AssignGridData(uint32_t index, CellType cellType, glm::vec3 color);
@@ -150,7 +159,9 @@ namespace grid
 		static bool m_RenderPath;
 		static bool m_RenderAttemps;
 		static bool m_ShowSteps;
+		static bool m_Active;
 		static int m_RenderSpeed;
+		static uint32_t m_CalculationsTime;
 		
 
 

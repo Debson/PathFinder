@@ -29,6 +29,7 @@ namespace md
 		void SetupOpenGL();
 		void SetupGlew();
 		void OnNewFrame();
+		void OnFinishFrame();
 		void ProcessInput(SDL_Event *e);
 		void Update();
 		void Render();

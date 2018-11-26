@@ -1,6 +1,7 @@
 #include "shader_conf.h"
 
 #include <gtc/matrix_transform.hpp>
+#include "shaders_code.h"
 
 namespace md
 {
@@ -28,7 +29,7 @@ namespace md
 	void shader::Start(glm::ivec2 dim)
 	{
 		// do error checking...
-		m_Shader = new mdShader("shaders//default.vert", "shaders//default.frag");
+		m_Shader = new mdShader(shaders_code::defaultVert, shaders_code::defaultFrag);
 
 		glGenBuffers(1, &m_InstanceVBO);
 		glGenBuffers(1, &m_VBO);
@@ -62,7 +63,7 @@ namespace md
 		m_Shader->setMat4("projection", m_Projection);
 
 
-		m_GridShaderHorizontal = new mdShader("shaders//grid.vert", "shaders//default.frag", "shaders//default.geom");
+		m_GridShaderHorizontal = new mdShader(shaders_code::gridVert, shaders_code::defaultFrag, shaders_code::defaultGeom);
 
 		glGenBuffers(1, &m_GridHorizontalVBO);
 		glGenVertexArrays(1, &m_GridHorizontalVAO);
@@ -77,7 +78,7 @@ namespace md
 		m_GridShaderHorizontal->setMat4("projection", m_Projection);
 
 
-		m_GridShaderVertical = new mdShader("shaders//grid.vert", "shaders//default.frag", "shaders//default.geom");
+		m_GridShaderVertical = new mdShader(shaders_code::gridVert, shaders_code::defaultFrag, shaders_code::defaultGeom);
 
 		glGenBuffers(1, &m_GridVerticalVBO);
 		glGenVertexArrays(1, &m_GridVerticalVAO);

@@ -2,7 +2,10 @@
 #define CONFIGURATION_H
 
 #include <glm.hpp>
-#define _DEBUG_
+//#define _DEBUG_
+
+#define SCREEN_FPS 60
+#define SCREEN_TICKS_PER_FRAME 1000 / SCREEN_FPS
 
 #define GRID_SIZE 30
 #define GRID_START_SCALE 1.00
@@ -18,9 +21,9 @@
 
 const glm::vec3 GRID_COLOR(0.9f, 0.9f, 0.9f);
 const glm::vec3 GRID_LINE_COLOR(0.3f, 0.3f, 0.3f);
-const glm::vec3 GRID_START_COLOR(1.f, 1.f, 0.f);
+const glm::vec3 GRID_START_COLOR(0.f, 1.f, 0.f);
 const glm::vec3 GRID_FINISH_COLOR(0.f, 0.f, 1.f);
 const glm::vec3 GRID_WALL_COLOR(0.f, 0.f, 0.f);
-const glm::vec3 GRID_ATTEMPT_COLOR(0.5f, 1.f, 1.f);
-const glm::vec3 GRID_PATH_COLOR(0.f, 1.f, 0.5f);
+const glm::vec3 GRID_ATTEMPT_COLOR(0.6f, 1.f, 1.f);
+const glm::vec3 GRID_PATH_COLOR(1.f, 0.f, 0.f);
 #endif // !CONFIGURATION_H

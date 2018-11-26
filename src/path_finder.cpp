@@ -9,6 +9,7 @@
 #include "shader_conf.h"
 #include "properties.h"
 #include "interface.h"
+#include "timer.h"
 
 glm::ivec2 md::PathFinderApp::m_AppDimension = glm::ivec2(790, 600);
 SDL_Window *md::PathFinderApp::m_Window = NULL;
@@ -28,7 +29,7 @@ void md::PathFinderApp::Start()
 	SetupOpenGL();
 	SetupGlew();
 
-	SDL_GL_SetSwapInterval(1);
+	//SDL_GL_SetSwapInterval(1);
 
 	m_Grid = new grid::GridMap();
 
@@ -45,8 +46,11 @@ void md::PathFinderApp::GameLoop()
 {
 	SDL_Event m_Event;
 
+	timer::Timer capTimer;
+
 	while (isRunning == true)
 	{
+		capTimer.Start();
 		OnNewFrame();
 
 		ProcessInput(&m_Event);
@@ -55,6 +59,14 @@ void md::PathFinderApp::GameLoop()
 
 		Render();
 
+
+		uint32_t frameTicks = capTimer.GetTicks();
+		if (m_Grid->IsActive() == false && frameTicks < SCREEN_TICKS_PER_FRAME)
+		{
+			SDL_Delay(SCREEN_TICKS_PER_FRAME - frameTicks);
+		}
+
+		OnFinishFrame();
 	}
 }
 
@@ -121,6 +133,11 @@ void md::PathFinderApp::OnNewFrame()
 	ImGui::NewFrame();
 }
 
+void md::PathFinderApp::OnFinishFrame()
+{
+	m_Grid->SetActive(false);
+}
+
 void md::PathFinderApp::ProcessInput(SDL_Event* e)
 {
 	while (SDL_PollEvent(e) != 0)
@@ -143,10 +160,6 @@ void md::PathFinderApp::ProcessInput(SDL_Event* e)
 			inputconf::UpdateMousePosition(e->motion.x, e->motion.y);
 			inputconf::UpdateRelativeMousePosition();
 			m_Grid->CheckCollision();
-			break;
-		}
-		case(SDL_KEYDOWN):
-		{
 			break;
 		}
 		}
@@ -178,7 +191,7 @@ void md::PathFinderApp::ProcessInput(SDL_Event* e)
 
 void md::PathFinderApp::Update()
 {
-
+	m_Grid->Update();
 }
 
 void md::PathFinderApp::Render()
@@ -199,8 +212,6 @@ void md::PathFinderApp::Render()
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 	SDL_GL_SwapWindow(m_Window);
-
-	//SDL_Delay(16);
 }
 
 

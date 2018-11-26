@@ -15,7 +15,7 @@ public:
 	GLuint ID;
 
 	mdShader();
-	mdShader(std::string vertexPath, std::string fragmentPath, std::string geometryPath = std::string());
+	mdShader(std::string vertexCode, std::string fragmentCode, std::string geometryCode = std::string());
 
 	static mdShader* VertFrag(const GLchar* vertexPath, const GLchar* fragmentPath);
 	static mdShader* VertFragGeo(const GLchar* vertexPath, const GLchar* fragmentPath, const GLchar* gemoetryPath);

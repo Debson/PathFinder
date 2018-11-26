@@ -13,7 +13,7 @@ namespace md
 	namespace gui
 	{
 		float lineWidth = 1;
-		std::string path = "Path: ";
+		std::string path = "Path Length: ";
 		int speed = 50;
 		bool diagonal = false;
 		bool renderPath = true;
@@ -103,14 +103,29 @@ namespace md
 			grid::GridMap::ClearGridPathAndAttempts();
 			path = "Path Length: ";
 			int res = grid::GridMap::SolveGrid();
-			if (res < 0)
-				path += "No path";
+			if (res == -1)
+			{
+				path += "Could not find a path";
+				SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+					"Path not found!",
+					"Path could not be find. Please make sure that grid is drawn correctly.",
+					NULL);
+			}
+			else if (res == -2)
+			{
+				SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+					"Start/Finish not assigned!",
+					"Start or/and Finish point is not assigned. Please make sure Start and Finish is assigned on the grid.",
+					NULL);
+			}
 			else
 				path += std::to_string(res);
 
 			if(showSteps)
 				grid::GridMap::SetRenderSpeed(speed);
 		}
+
+		ImGui::Text(("Calculations Time: " + std::to_string(grid::GridMap::GetCalculationsTime()) + "ms").c_str());
 		ImGui::Text(path.c_str());
 
 		std::string state = "Edit Mode: ";
