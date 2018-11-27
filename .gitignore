@@ -354,3 +354,5 @@ PathFinder_Visualisation\.vcxproj
 PathFinder_Visualisation\.sln
 
 imgui\.ini
+
+*.dll
