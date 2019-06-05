@@ -1,8 +1,6 @@
 #include "gui.h"
 
-
-#include <GL/gl3w.h>
-
+#include <glad/glad.h>
 #include "shader_conf.h"
 #include "path_finder.h"
 #include "interface.h"
@@ -15,9 +13,9 @@ namespace md
 		float lineWidth = 1;
 		std::string path = "Path Length: ";
 		int speed = 50;
-		bool diagonal = false;
+		bool diagonal = true;
 		bool renderPath = true;
-		bool renderAttemps = false;
+		bool renderAttemps = true;
 		bool showSteps = false;
 		
 	}
@@ -33,7 +31,6 @@ namespace md
 
 	void gui::Imgui::Start()
 	{
-
 	}
 
 	void gui::Imgui::Render()
@@ -51,6 +48,24 @@ namespace md
 
 		ImGui::Text(("Objects count: " + std::to_string(grid::GridMap::GetObjectsCount())).c_str());
 #endif
+
+		const char *algorithms[] = { A_STAR_ALGORITHM, BREADTH_FIRST_SEARCH, DIJKSTRA_ALGORITHM };
+		static const char *current_algo =  algorithms[0];
+		if(ImGui::BeginCombo("Algorithm", current_algo))
+        {
+		    for(auto & algorithm : algorithms)
+            {
+		        bool is_selected = (current_algo == algorithm);
+		        if(ImGui::Selectable(algorithm, is_selected))
+		            current_algo = algorithm;
+		        if(is_selected)
+		            ImGui::SetItemDefaultFocus();
+            }
+
+            grid::GridMap::SetAlgorithm(current_algo);
+
+		    ImGui::EndCombo();
+        }
 
 		if (ImGui::Button("Clear grid"))
 		{
@@ -80,12 +95,10 @@ namespace md
 
 		if (showSteps)
 		{
-			if (ImGui::SliderInt("Speed", &speed, 0, 100))
-			{
-				grid::GridMap::SetRenderSpeed(speed);
-			}
+			ImGui::SliderInt("Speed", &speed, 0, 100);
+            grid::GridMap::SetRenderSpeed(speed);
 		}
-		
+
 		if (ImGui::Checkbox("Show Path", &renderPath))
 		{
 			grid::GridMap::SetRenderPath(renderPath);
@@ -93,14 +106,15 @@ namespace md
 		}
 		ImGui::SameLine(210.f);
 
-		if (ImGui::Checkbox("Show Attemps", &renderAttemps))
+		if (ImGui::Checkbox("Show Attempts", &renderAttemps))
 		{
-			grid::GridMap::SetRenderAttemps(renderAttemps);
+            grid::GridMap::SetRenderAttempts(renderAttemps);
 		}
 
 		if (ImGui::Button("FindPath"))
 		{
 			grid::GridMap::ClearGridPathAndAttempts();
+
 			path = "Path Length: ";
 			int res = grid::GridMap::SolveGrid();
 			if (res == -1)
@@ -122,7 +136,7 @@ namespace md
 				path += std::to_string(res);
 
 			if(showSteps)
-				grid::GridMap::SetRenderSpeed(speed);
+				grid::GridMap::SetRenderSpeed(abs(100 - speed));
 		}
 
 		ImGui::Text(("Calculations Time: " + std::to_string(grid::GridMap::GetCalculationsTime()) + "ms").c_str());

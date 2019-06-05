@@ -1,6 +1,6 @@
 #include "shader_conf.h"
 
-#include <gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "shaders_code.h"
 
 namespace md
@@ -172,7 +172,7 @@ namespace md
 		//glDrawArrays(GL_TRIANGLES, 0, 6);
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
-		glBindTexture(GL_TEXTURE_2D, 0);;
+		//glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	void shader::Draw(glm::vec2 pos, glm::vec2 size, bool drawUnderGrid)

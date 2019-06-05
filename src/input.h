@@ -1,9 +1,9 @@
 #ifndef INPUT_H
 #define INPUT_h
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
-#include <glm.hpp>
+#include <glm/glm.hpp>
 
 namespace md
 {

@@ -2,9 +2,10 @@
 
 #include "path_finder.h"
 
+
 md::PathFinderApp pathFidnerApp;
 
-int main(int argc, int **args)
+int main(int argc, char *argv[])
 {
 	pathFidnerApp.Start();
 

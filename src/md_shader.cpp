@@ -1,4 +1,6 @@
 #include "md_shader.h"
+
+
 mdShader::mdShader() { }
 
 mdShader::mdShader(std::string vertexCode, std::string fragmentCode, std::string geometryCode)

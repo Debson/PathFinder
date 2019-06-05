@@ -1,16 +1,16 @@
 #ifndef GRID_H
 #define GRID_H
 
+#include <iostream>
 #include <vector>
+#include <stack>
 
-#include <boost/multi_array.hpp>
-#include <glm.hpp>
+#include <glm/glm.hpp>
 
 #include "conf.h"
 #include "timer.h"
 
 
-//TODO: create grid struct, put in in vector
 namespace md
 {
 namespace grid
@@ -28,27 +28,28 @@ namespace grid
 
 	struct Grid
 	{
-		uint32_t row;
-		uint32_t column;
+	    Grid() { }
+	    Grid(int r, int c) : row(r), column(c) { };
+		int row;
+		int column;
 	};
 
-	struct GridDataType
+    struct GridAStar : public Grid
 	{
-		GridDataType() : x(0), y(0), type(CellType::None) { };
-		~GridDataType() { type = CellType::None; };
-		uint32_t x;
-		uint32_t y;
-		CellType type;
+		double overall_cost, cost_to_start, cost_to_finish;
 	};
-
 
 	struct SavedGridData : Grid
 	{
+	    SavedGridData() { }
+	    SavedGridData(int r, int c, CellType t) : type(t) { this->row = r; this->column = c;}
 		CellType type;
 	};
 
 	struct VertexData
 	{
+	    VertexData() { };
+	    VertexData(glm::vec2 t, glm::vec3 c) : translation(t), color(c) { };
 		glm::vec2 translation;
 		glm::vec3 color;
 	};
@@ -62,7 +63,7 @@ namespace grid
 	struct PathRenderData
 	{
 		PathRenderData() { };
-		PathRenderData(std::vector<std::pair<uint32_t, uint32_t>> p) : counter(0), pairs(p), render(true)
+		PathRenderData(std::vector<Grid> p) : counter(0), pairs(p), render(true)
 		{ 
 			step = pairs.size() * 0.01f;
 			if (step <= 0)
@@ -70,9 +71,9 @@ namespace grid
 			timer = timer::Timer(GRID_BASE_RENDER_DELAY); 
 			timer.Start();
 		};
-		std::vector<std::pair<uint32_t, uint32_t>> pairs;
-		uint32_t counter;
-		uint32_t step;
+		std::vector<Grid> pairs;
+		int counter;
+		int step;
 		timer::Timer timer;
 		bool render;
 	};
@@ -80,7 +81,7 @@ namespace grid
 	struct AttemptsRenderData
 	{
 		AttemptsRenderData() { };
-		AttemptsRenderData(std::vector<std::pair<uint32_t, uint32_t>> p) : counter(0), pairs(p), render(true)
+		AttemptsRenderData(std::vector<Grid> p) : counter(0), pairs(p), render(true)
 		{
 			step = pairs.size() * 0.01f;
 			if (step <= 0)
@@ -88,9 +89,9 @@ namespace grid
 			timer = timer::Timer(GRID_BASE_RENDER_DELAY);
 			timer.Start();
 		};
-		std::vector<std::pair<uint32_t, uint32_t>> pairs;
-		uint32_t counter;
-		uint32_t step;
+		std::vector<Grid> pairs;
+		int counter;
+		int step;
 		timer::Timer timer;
 		bool render;
 	};
@@ -101,7 +102,6 @@ namespace grid
 		GridStartFinish finish;
 		std::vector<SavedGridData> grid_data;
 		// Actual grid reprezentation
-		std::vector<uint32_t> grid_rep;
 		// Vector with all translations that are send as vertex data
 		std::vector<VertexData> translations;
 		// Reference vector that stores row and column of every translation (translation_ref[n] has column and row of translation[n])
@@ -121,37 +121,41 @@ namespace grid
 		void Update();
 		void Render();
 		static void UpdateGridOnResize(uint16_t rows, uint16_t columns);
-		static void UpdateGridOnDraw(uint32_t index, CellType cellType);
+		static void UpdateGridOnDraw(int index, CellType cellType);
 		static void UpdateGridScale(float s);
 		void CheckCollision();
 		static void OnWindowResize(glm::ivec2 newDim = m_GridDimensions);
 		static int SolveGrid();
-		static uint32_t *GetGridAt(uint32_t row, uint32_t col);
 		static void SetDiagonal(bool val);
 		static void SetRenderPath(bool val);
-		static void SetRenderAttemps(bool val);
+		static void SetRenderAttempts(bool val);
 		static void SetShowSteps(bool val);
-		static void SetRenderSpeed(uint32_t speed);
+		static void SetRenderSpeed(int speed);
+        static void SetAlgorithm(const char *algoName);
 		static void ClearGrid();
 		static void ClearGridPathAndAttempts();
+		static double CalculateHeuristics(int row, int column);
+        static void TracePath(GridAStar grid[], std::vector<Grid> *path);
+
 		static bool IsActive();
 		static void SetActive(bool val);
 		static bool IsRendering();
-		static uint32_t GetCalculationsTime();
+		static int GetCalculationsTime();
+
+
 #ifdef _DEBUG_
 		static void PrintGrid();
 		static int GetObjectsCount();
 #endif
 
-	private:
-		static bool EraseGrid(uint32_t i);
-		static void EraseGrid(CellType cellType);
-		static uint32_t GridSize();
-		static bool isValid(uint32_t row, uint32_t col);
-		static void AssignGridData(uint32_t index, CellType cellType, glm::vec3 color);
-		static void OnGridSolved(std::vector<std::pair<uint32_t, uint32_t>> *path, std::vector<std::pair<uint32_t, uint32_t>> *attempts);
+	private:;
+	    static void EraseGrid(int row, int col);
+		static int GridSize();
+		static bool isValid(int row, int col);
+		static void AssignGridData(int index, CellType cellType, glm::vec3 color);
+		static void OnGridSolved(std::vector<Grid> *path, std::vector<Grid> *attempts);
 
-		static uint32_t m_GridRows, m_GridColumns;
+		static int m_GridRows, m_GridColumns;
 		static SavedGridSummary m_SavedGridSummary;
 		static glm::ivec2 m_GridDimensions;
 		static float m_GridScale;
@@ -161,7 +165,8 @@ namespace grid
 		static bool m_ShowSteps;
 		static bool m_Active;
 		static int m_RenderSpeed;
-		static uint32_t m_CalculationsTime;
+		static int m_CalculationsTime;
+		static const char * m_CurrentAlgorithm;
 		
 
 

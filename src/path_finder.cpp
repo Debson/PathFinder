@@ -1,15 +1,19 @@
 #include "path_finder.h"
 
+#include <SDL2/SDL.h>
+#undef main
+
 #include <iostream>
 
-#include <GL/gl3w.h>
-#include <gtc/matrix_transform.hpp>
+#include <glad/glad.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "input.h"
 #include "shader_conf.h"
 #include "properties.h"
 #include "interface.h"
 #include "timer.h"
+
 
 glm::ivec2 md::PathFinderApp::m_AppDimension = glm::ivec2(790, 600);
 SDL_Window *md::PathFinderApp::m_Window = NULL;
@@ -60,7 +64,7 @@ void md::PathFinderApp::GameLoop()
 		Render();
 
 
-		uint32_t frameTicks = capTimer.GetTicks();
+		int frameTicks = capTimer.GetTicks();
 		if (m_Grid->IsActive() == false && frameTicks < SCREEN_TICKS_PER_FRAME)
 		{
 			SDL_Delay(SCREEN_TICKS_PER_FRAME - frameTicks);
@@ -74,11 +78,13 @@ void md::PathFinderApp::GameLoop()
 void md::PathFinderApp::Close()
 {
 	SDL_DestroyWindow(m_Window);
+	SDL_Quit();
 }
 
 /* private methods */
 void md::PathFinderApp::SetupSDL()
 {
+	SDL_Init(SDL_INIT_VIDEO);
 	m_Window = SDL_CreateWindow("PathFinder", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_AppDimension.x, m_AppDimension.y, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 	//m_Renderer = SDL_CreateRenderer(m_Window, -1, SDL_RENDERER_ACCELERATED);
 	SDL_CaptureMouse(SDL_FALSE);
@@ -99,7 +105,10 @@ void md::PathFinderApp::SetupOpenGL()
 
 void md::PathFinderApp::SetupGlew()
 {
-	gl3wInit();
+	//gl3wInit();
+
+	if(!gladLoadGLLoader(SDL_GL_GetProcAddress))
+	    printf("Error initializing glad!");
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);

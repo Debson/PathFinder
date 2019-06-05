@@ -1,13 +1,13 @@
 #ifndef PATH_FINDER_H
 #define PATH_FINDER_H
 
-#include <SDL.h>
-#undef main
+#include <SDL2/SDL.h>
 
-#include <glm.hpp>
+#include <glm/glm.hpp>
 #include "conf.h"
 #include "gui.h"
 #include "grid.h"
+
 
 namespace md
 {

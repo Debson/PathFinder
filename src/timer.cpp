@@ -1,12 +1,13 @@
 #include "timer.h"
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
+#undef main
 
 namespace md
 {
 	timer::Timer::Timer() : m_StartTicks(0), m_TargetTime(0), m_Started(false), m_Finished(false), m_Initialized(false) { };
 
-	timer::Timer::Timer(uint32_t tt) : m_StartTicks(0), m_TargetTime(tt), m_Started(false), m_Finished(false), m_Initialized(false) { }
+	timer::Timer::Timer(int tt) : m_StartTicks(0), m_TargetTime(tt), m_Started(false), m_Finished(false), m_Initialized(false) { }
 
 	void timer::Timer::Start()
 	{
@@ -19,12 +20,12 @@ namespace md
 		m_StartTicks = SDL_GetTicks();
 	}
 
-	void timer::Timer::ChangeTargetTime(uint32_t newtt)
+	void timer::Timer::ChangeTargetTime(int newtt)
 	{
 		m_TargetTime = newtt;
 	}
 
-	uint32_t timer::Timer::GetTicks()
+	int timer::Timer::GetTicks()
 	{
 		return SDL_GetTicks() - m_StartTicks;
 	}

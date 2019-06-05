@@ -12,18 +12,18 @@ namespace md
 		{
 		public:
 			Timer();
-			Timer(uint32_t tt);
+			Timer(int tt);
 
 
 			void Start();
 			void Restart();
-			void ChangeTargetTime(uint32_t newtt);
-			uint32_t GetTicks();
+			void ChangeTargetTime(int newtt);
+			int GetTicks();
 				
 			bool isFinished();
 		private:
-			uint32_t m_StartTicks;
-			uint32_t m_TargetTime;
+			int m_StartTicks;
+			int m_TargetTime;
 			bool m_Started;
 			bool m_Finished;
 			bool m_Stopped;

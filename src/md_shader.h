@@ -1,8 +1,8 @@
 #ifndef MD_SHADER_H
 #define MD_SHADER_H
 
-#include <GL/gl3w.h>
-#include <glm.hpp>
+#include <glad/glad.h>
+#include <glm/glm.hpp>
 #include <string>
 #include <fstream>
 #include <sstream>
